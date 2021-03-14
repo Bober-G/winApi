@@ -1,4 +1,4 @@
-// Project2.cpp : Defines the entry point for the application.
+/// Project2.cpp : Defines the entry point for the application.
 //
 
 #include "framework.h"
@@ -101,7 +101,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    int xPos = (GetSystemMetrics(SM_CXSCREEN));
    int yPos = (GetSystemMetrics(SM_CYSCREEN));
   
-   HWND hWnd = CreateWindowW(szWindowClass, L"FruitNinja", WS_OVERLAPPEDWINDOW,
+   HWND hWnd = CreateWindowW(szWindowClass, L"FruitNinja", WS_OVERLAPPEDWINDOW&~WS_MAXIMIZEBOX&~WS_MINIMIZEBOX,
        xPos/2, yPos/2 ,400, 300 , nullptr, nullptr, hInstance, nullptr);
     
    if (!hWnd)
@@ -147,10 +147,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-   
+   static HCURSOR cursor = NULL;
     switch (message)
     {
-  
+    
     case WM_COMMAND:
         {
             int wmId = LOWORD(wParam);
@@ -185,14 +185,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         HBRUSH
             oldBrush = (HBRUSH)SelectObject(hdc1, brush);
         for (int i = 0; i < 400; i += 100) {
-            for (int j = 0; j < 400; j += 50)
-            Rectangle(hdc1, j,  i, 50 + j, 50 + i);
+            Rectangle(hdc1, 0,  i, 50, 50 + i);
+            Rectangle(hdc1, 50, 50 + i, 100, 100 + i);
+            Rectangle(hdc1, 100, i, 150, 50 + i);
+            Rectangle(hdc1, 150, 50 + i, 200, 100 + i);
+            Rectangle(hdc1, 200, i, 250, 50 + i);
+            Rectangle(hdc1, 250, 50 + i, 300, 100 + i);
         }
 
        
         SelectObject(hdc1, oldPen);
         DeleteObject(pen);
-        SelectObject(hdc1, oldBrush);
+         SelectObject(hdc1, oldBrush);
         DeleteObject(brush);
         EndPaint(hWnd, &ps);
         }
@@ -206,14 +210,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
              }
         break;
 
+    //case WM_CREATE:
+    //{
+    //    HINSTANCE hInstance = ((LPCREATESTRUCT)lParam)->hInstance;
+    //    HICON hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
+    //    //_ASSERTE(hIcon != 0);
+    //    SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+    //    return 0;
+    //}
+   
+    
     case WM_CREATE:
-    {
-        HINSTANCE hInstance = ((LPCREATESTRUCT)lParam)->hInstance;
-        HICON hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(fruit_ninja.ico));
-        _ASSERTE(hIcon != 0);
-        SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
-        return 0;
-    }
+         cursor = LoadCursor(NULL, IDC_NO);
+         break;
+     case WM_SETCURSOR:
+         SetCursor(cursor);
+         return TRUE;
+
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
