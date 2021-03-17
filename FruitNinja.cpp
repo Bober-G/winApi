@@ -1,8 +1,14 @@
-
 #include "framework.h"
 #include "FruitNinja.h"
-
+#include <vector>
 #define MAX_LOADSTRING 100
+
+struct ball {
+    float x, y, radius;
+    float xspeed, yspeed;
+};
+
+std::vector<ball> balls;
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
@@ -48,6 +54,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
+       
     }
 
     return (int)msg.wParam;
@@ -93,9 +100,10 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
-
-    RECT rc = {0,0,400,300};
     
+    WINDOWPLACEMENT wp;
+    RECT rc = {0,0,400,300};
+    RECT prevrc;
     hInst = hInstance;
     int xPos = (GetSystemMetrics(SM_CXSCREEN));
     int yPos = (GetSystemMetrics(SM_CYSCREEN));
@@ -105,17 +113,24 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     
     HWND hWnd = CreateWindowW(szWindowClass, L"FruitNinja", WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_MINIMIZEBOX,// removing min/max
         0, 0, 0, 0, nullptr, nullptr, hInstance, nullptr);
-    //HWND hWndProgressBar = CreateWindowEx(0,PROGRESS_CLASS,(LPSTR)NULL, WS_VISIBLE | WS_CHILD, 10, 50,200, 20,hWnd, (HMENU)IDPB_PROGRESS_BAR, (HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE), NULL);
+    HWND hWnd1;
+    //SetParent(hWnd1, hWnd);
+    //hWnd1 = CreateWindowEx(szWindowClass);
     if (!hWnd)
     {
         return FALSE;
     }
-    
+    //GetClientRect(hWnd, &rc);
     AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
+    //SetWindowPlacement(hWnd,&wp);
+    
     SetWindowPos(hWnd, HWND_TOPMOST, xPos / 2 - width / 2, yPos / 2 - height / 2, rc.right - rc.left, rc.bottom - rc.top, FALSE); // Setting window to topmost
     //MoveWindow(hWnd,xPos / 2 - width / 2,yPos / 2 - height / 2, rc.right - rc.left, rc.bottom - rc.top, TRUE);
-    
-    
+    for (int i = 0; i < balls.size(); i++) {
+        balls[i].x += balls[i].xspeed;
+        balls[i].y += balls[i].yspeed;
+    }
+   
     ShowWindow(hWnd, nCmdShow);
     UpdateWindow(hWnd);
 
@@ -134,6 +149,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    HDC hdc = GetDC(hWnd);
+    RECT ballrc = { 0,0,40,40 };
+    //Ellipse(hdc, ballrc.left, ballrc.top, ballrc.right, ballrc.bottom);
+    RECT rc = { 0,0,0,0 };
     RECT rc1 = { 0,0,400,300 };
     RECT rc2 = { 0,0,600,500 };
     RECT rc3 = { 0,0,800,600 };
@@ -153,16 +172,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
    
     POINT ptOld; POINT pt;
       
-    HDC hdc = GetDC(hWnd);
+    
     GetCursorPos(&ptOld);
     
-    UINT uRes1 = SetTimer(hWnd, IDT_TRANPARENCY, 1000, (TIMERPROC)NULL);
-    UINT uRes2 = SetTimer(hWnd, IDT_GAMEDURATION, 2000, (TIMERPROC)NULL);
+    UINT uRes1 = SetTimer(hWnd, IDT_TRANPARENCY, 3000, (TIMERPROC)NULL);
+    UINT uRes2 = SetTimer(hWnd, IDT_GAMEDURATION, 4000, (TIMERPROC)NULL);
     
     HMENU mainMenu = GetMenu(hWnd);
-    WINDOWPLACEMENT wPos;
-    
-    switch (message)
+    WINDOWPLACEMENT wp = { sizeof(WINDOWPLACEMENT),WPF_ASYNCWINDOWPLACEMENT, SW_RESTORE, {rc1.right - rc1.left,rc1.bottom - rc1.top}, 12, 12 };
+    //SetWindowPlacement(hWnd, &wp);
+   switch (message)
     {
 
     case WM_COMMAND:
@@ -171,41 +190,34 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         // Parse the menu selections:
         switch (wmId)
         {
-        case IDM_ABOUT:
-            DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-            break;
+       
         case IDM_EXIT:
             DestroyWindow(hWnd);
             break;
         case IDM_NEWGAME:
-            KillTimer(hWnd, 1);
-            CreateWindowW(szWindowClass, L"FruitNinja", WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_MINIMIZEBOX,// removing min/max
-                0, 0, 0, 0, nullptr, nullptr, hInst, nullptr);
-            SetWindowPos(hWnd, HWND_TOPMOST, xPos / 2 - width1 / 2, yPos / 2 - height1 / 2, rc1.right - rc1.left, rc1.bottom - rc1.top, FALSE);
-            //SetLayeredWindowAttributes(hWnd, 0, (255 * 100) / 100, LWA_ALPHA);
-            SetTimer(hWnd, 1, USER_TIMER_MINIMUM, NULL);
-            break;
+            KillTimer(hWnd, IDT_GAMEDURATION);
+            SetTimer(hWnd, IDT_GAMEDURATION, 4000, (TIMERPROC)NULL);
             
         case IDM_SMALL:
-            AdjustWindowRect(&rc1, WS_OVERLAPPEDWINDOW, FALSE);
-            SetWindowPos(hWnd, HWND_TOPMOST, xPos / 2 - width1 / 2, yPos / 2 - height1 / 2, rc1.right - rc1.left, rc1.bottom - rc1.top, FALSE);
-            //SetWindowPlacement(hWnd, &wPos);
+            rc = { 0,0,400,300 };
+            AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
+            SetWindowPos(hWnd, HWND_TOPMOST, xPos / 2 - width1 / 2, yPos / 2 - height1 / 2, rc.right - rc.left, rc.bottom - rc.top, FALSE);
             CheckMenuItem(mainMenu,IDM_SMALL,MFS_CHECKED);
             CheckMenuItem(mainMenu, IDM_MEDIUM, MFS_UNCHECKED);
             CheckMenuItem(mainMenu, IDM_BIG, MFS_UNCHECKED);
             break;
         case IDM_MEDIUM:
-            AdjustWindowRect(&rc2, WS_OVERLAPPEDWINDOW, FALSE);
-            SetWindowPos(hWnd, HWND_TOPMOST, xPos / 2 - width2 / 2, yPos / 2 - height2 / 2, rc2.right - rc2.left, rc2.bottom - rc2.top, FALSE);
-            //SetWindowPlacement(hWnd, &wPos);
+            rc = { 0,0,600,500 };
+            AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
+            SetWindowPos(hWnd, HWND_TOPMOST, xPos / 2 - width2 / 2, yPos / 2 - height2 / 2, rc.right - rc.left, rc.bottom - rc.top, FALSE);
             CheckMenuItem(mainMenu, IDM_MEDIUM, MFS_CHECKED);
             CheckMenuItem(mainMenu, IDM_SMALL, MFS_UNCHECKED);
             CheckMenuItem(mainMenu, IDM_BIG, MFS_UNCHECKED);
             break;
         case IDM_BIG:
-            AdjustWindowRect(&rc3, WS_OVERLAPPEDWINDOW, FALSE);
-            SetWindowPos(hWnd, HWND_TOPMOST, xPos / 2 - width3 / 2, yPos / 2 - height3 / 2, rc3.right - rc3.left, rc3.bottom - rc3.top, FALSE);
-            //SetWindowPlacement(hWnd, &wPos);
+            rc = { 0,0,800,600 };
+            AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
+            SetWindowPos(hWnd, HWND_TOPMOST, xPos / 2 - width3 / 2, yPos / 2 - height3 / 2, rc.right - rc.left, rc.bottom - rc.top, FALSE);
             CheckMenuItem(mainMenu, IDM_BIG, MFS_CHECKED);
             CheckMenuItem(mainMenu, IDM_SMALL, MFS_UNCHECKED);
             CheckMenuItem(mainMenu, IDM_MEDIUM, MFS_UNCHECKED);
@@ -221,62 +233,80 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         PAINTSTRUCT ps;
         HDC hdc1 = BeginPaint(hWnd, &ps);
-
+        HDC hdc2 = BeginPaint(hWnd, &ps);
         HPEN pen = CreatePen(PS_NULL, 0, RGB(100, 100, 100));
 
-        HPEN
-            oldPen = (HPEN)SelectObject(hdc1, pen);
+        HPEN oldPen = (HPEN)SelectObject(hdc1, pen);
 
-        HBRUSH
-            brush = CreateSolidBrush(RGB(0, 0, 0));
+        HBRUSH brush = CreateSolidBrush(RGB(0, 0, 0));
 
-        HBRUSH
-            oldBrush = (HBRUSH)SelectObject(hdc1, brush);
-     
+        HBRUSH oldBrush = (HBRUSH)SelectObject(hdc1, brush);
+
         for (int i = 0; i < BOARD_SIZE; i += 100) {
             for (int j = 0; j < BOARD_SIZE; j += 100) {
-                Rectangle(hdc1, j, i, 50 +j , 50 + i);
+                Rectangle(hdc1, j, i, 50 + j, 50 + i);
                 Rectangle(hdc1, 50 + j, i + 50, 100 + j, 100 + i);
             }
         }
+        DeleteObject(brush);
+        
+        HBRUSH brush1 = CreateSolidBrush(RGB(0, 255, 0));
+        HBRUSH oldBrush1 = (HBRUSH)SelectObject(hdc2, brush);
+        /*for (float k = 0; k < balls.size(); k++) {
+            Ellipse(hdc2, balls[k].x - balls[k].radius, balls[k].y - balls[k].radius,
+                balls[k].x + balls[k].radius, balls[k].y + balls[k].radius);
+        }*/
+        //Ellipse(hdc2, 10,20,30,40 );
+       // Ellipse(hdc2, ballrc.left, ballrc.top, ballrc.right, ballrc.bottom);
 
-  
     }
     break;
 
-    /*case WM_GETMINMAXINFO:
-    {
-        MINMAXINFO* minMaxInfo = (MINMAXINFO*)lParam;
-        minMaxInfo->ptMaxSize.x = minMaxInfo->ptMaxTrackSize.x = 300;
-        minMaxInfo->ptMaxSize.y = minMaxInfo->ptMaxTrackSize.y = 400;
-    }
-    break;*/
-
     case WM_TIMER:
         
-        switch (wParam)
-        {
-        case IDT_TRANPARENCY:
+        /*if (wParam == IDT_TRANPARENCY) {
             GetCursorPos(&pt);
             /// Set to semitransparent after not moving the cursor for 3 seconds
             if ((pt.x == ptOld.x) && (pt.y == ptOld.y))
             {
                 SetWindowLong(hWnd, GWL_EXSTYLE, GetWindowLong(hWnd, GWL_EXSTYLE) | WS_EX_LAYERED);
                 SetLayeredWindowAttributes(hWnd, 0, (255 * 70) / 100, LWA_ALPHA);
+                SetCapture(hWnd);
+                
             }
-            break;
-        case IDT_GAMEDURATION:
-            //SetWindowLong(hWnd, GWL_EXSTYLE, GetWindowLong(hWnd, GWL_EXSTYLE) | WS_EX_LAYERED);
-            SetLayeredWindowAttributes(hWnd, 0, (255 * 70) / 100, LWA_ALPHA);
-            break;
+            
         }
-        
-        break;
+        if (wParam == IDT_GAMEDURATION) {
+            GetForegroundWindow();
+            SetForegroundWindow(hWnd);
+        }*/
+        switch (wParam){
+        case IDT_TRANPARENCY:
+            GetCursorPos(&pt);
+            /// Set to semitransparent after not moving the cursor for 3 seconds
+            if ((pt.x == ptOld.x) && (pt.y == ptOld.y))
+            {
+                SetWindowLong(hWnd, GWL_EXSTYLE, GetWindowLong(hWnd, GWL_EXSTYLE) | WS_EX_LAYERED);
+                SetLayeredWindowAttributes(hWnd,0, (255 * 70) / 100, LWA_ALPHA);
+                SetCapture(hWnd);
+                return 0;
+            }
+        case IDT_GAMEDURATION:
+            GetForegroundWindow();
+            SetWindowLong(hWnd, GWL_STYLE, GetWindowLong(hWnd,  WS_EX_LAYERED));
+            SetLayeredWindowAttributes(hWnd, 0x0000FF00, (255 * 70) / 100, LWA_ALPHA);
+            SetForegroundWindow(hWnd);
+            return 0;
+            }
+        //ballrc.top -= 10;
+       
+    break;
     case WM_MOUSEMOVE:
         
-        SetPixel(hdc, LOWORD(lParam), HIWORD(lParam), RGB(255, 0, 0));
+        SetPixel(hdc, LOWORD(lParam), HIWORD(lParam), RGB(2, 250, 250));
         ReleaseDC(hWnd, hdc);
-        //SetLayeredWindowAttributes(hWnd, 0, (255 * 100) / 100, LWA_ALPHA);
+        if(ReleaseCapture() == TRUE)
+            SetLayeredWindowAttributes(hWnd, 0, (255 * 100) / 100, LWA_ALPHA);
         break;
     case WM_CREATE:
         
@@ -290,38 +320,38 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_SETCURSOR:
         SetCursor(cursor);
          return TRUE;
-    case WM_SETICON:
-        //GetIconInfo(icon);
-         return TRUE;
     case WM_DESTROY:
         PostQuitMessage(0);
-        //GetWindowPlacement(hWnd, &wPos);
+        GetWindowRect(hWnd,&rc);
+        KillTimer(hWnd, IDT_TRANPARENCY);
+        GetWindowPlacement(hWnd,&wp);
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
+       
     }
     return 0;
 }
 
-// Message handler for about box.
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    UNREFERENCED_PARAMETER(lParam);
-    switch (message)
-    {
-    case WM_INITDIALOG:
-        return (INT_PTR)TRUE;
-
-    case WM_COMMAND:
-        if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
-        {
-            EndDialog(hDlg, LOWORD(wParam));
-            return (INT_PTR)TRUE;
-        }
-        break;
-    }
-    return (INT_PTR)FALSE;
-}
+//// Message handler for about box.
+//INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+//{
+//    UNREFERENCED_PARAMETER(lParam);
+//    switch (message)
+//    {
+//    case WM_INITDIALOG:
+//        return (INT_PTR)TRUE;
+//
+//    case WM_COMMAND:
+//        if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
+//        {
+//            EndDialog(hDlg, LOWORD(wParam));
+//            return (INT_PTR)TRUE;
+//        }
+//        break;
+//    }
+//    return (INT_PTR)FALSE;
+//}
 
 
 
